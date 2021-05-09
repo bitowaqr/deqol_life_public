@@ -1,4 +1,5 @@
 name: "DEQOL Life"
+output_dir: "docs"
 exclude: ["data", "outputs","R",]
 navbar:
   title: "DEQoL Life WP1 results"
