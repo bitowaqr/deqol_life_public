@@ -4,9 +4,12 @@ exclude: ["data", "outputs","R",]
 navbar:
   title: "DEQoL Life WP1 results"
   left:
-    - text: " "
+    - text: "Home"
       href: index.html
     - text: "EQ-5D-3L"
       href: page_eq5d3l.html
     - text: "EQ-5D-5L"
       href: page_eq5d5l.html
+output:
+  html_document:
+    theme: cosmo
