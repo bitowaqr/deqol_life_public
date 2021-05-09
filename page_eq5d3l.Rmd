@@ -1,0 +1,299 @@
+---
+title: "EQ-5D-3L Results"
+author: "Paul Schneider"
+date: '2021-05-09'
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+    code_folding: hide
+---
+
+
+# SETUP
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# RESULTS for report
+# 27.03.2021
+
+# Load packages
+library(summarytools)
+library(knitr)
+library(kableExtra)
+library(sjPlot)
+library(sjstats)
+library(reshape2)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(cowplot)
+library(questionr)
+library(shiny)
+library(data.table)
+library('jpeg')
+
+
+# load utility functions
+source("./R/utilities.R")
+```
+
+
+```{r warning=FALSE, class.source = 'fold-show'}
+## Load data and specify inclusion/exclusion
+  # read data 2004-2018
+  hse_combined = read.csv("./data/HSE_combined/hse_combined.csv")
+  
+  # recode imd
+  hse_combined$imd <- as.factor(hse_combined$imd)
+  levels(hse_combined$imd) = c(
+    "Least deprived",
+    "Less deprived",
+    "Median deprived",
+    "More deprieved",
+    "Most deprived"
+    )
+  
+  hse_combined[,c(14:36)] <- apply(hse_combined[,c(14:36)],2,as.factor)
+  
+  # EXCLUDE: < 16 years
+  hse_combined <- hse_combined[hse_combined$age5 >= 16 & !is.na(hse_combined$age5),]
+```
+
+# inclusion / exclusion
+
+```{r warning=FALSE, class.source = 'fold-show'}
+#### 3L or 5L version ?
+# # 3L: year <= 2016
+hse_combined <- hse_combined[hse_combined$year <= 2016 & !is.na(hse_combined$year),]
+# # 5L: year >= 2017
+# hse_combined <- hse_combined[hse_combined$year >= 2017,]
+
+# EXCLUDE VARS NOT IN USE
+not_used_var <- c(
+  "limitill", "bmival", "topqual3", "cigst1", "econact", "acutill",
+  "ghq12scr", "genhelf2", "age5.bin", "age_band", "hh_id", "age", "eqv5",
+  "age.bins"
+  )
+  
+hse_combined <- hse_combined[,!(names(hse_combined) %in% not_used_var)]
+```
+
+
+
+```{r warning=FALSE, class.source = 'fold-show'}
+print("# Data rows: overall")
+nrow(hse_combined)
+
+print("# Data rows: by year")
+do.call(rbind, list(by(hse_combined,hse_combined$year, nrow)))
+
+print("# MISSING data in % by variable")
+apply(hse_combined,2,function(x){
+  round( sum(is.na(x))/nrow(hse_combined) , 4) * 100} )
+
+print("# NON-MISSING: rows with complete data")
+round(sum(complete.cases(hse_combined))/nrow(hse_combined),4)*100
+
+print("## EXCLUDE cases with missing data")
+print("## N.B: almost all cases with missing data are missing eq5d data! ")
+nrow_before <- nrow(hse_combined)
+hse_combined <- hse_combined[complete.cases(hse_combined),]
+
+# N CASES INCLUDED IN ANALYSIS
+print("# rows removed: absolute difference")
+nrow(hse_combined) - nrow_before
+print("# rows remaining: relative")
+nrow(hse_combined) / nrow_before
+print("# n cases (=house holds) new data set")
+nrow(hse_combined)
+print("# rows by year")
+table(hse_combined$year)
+```
+
+
+# DATA SET DESCRIPTION 3l
+
+
+
+
+
+```{r}
+## Data set description
+
+## Descriptives: age5
+
+# distribution: age5 by IMD
+print("distribution: age5 by IMD")
+ggplot(hse_combined) +
+  geom_histogram(aes(age5), col = "lightgray",fill = "cadetblue") +
+  facet_wrap(~imd) +
+  theme_minimal()
+
+print(dfSummary(
+  hse_combined, 
+  plain.ascii = FALSE, 
+  style = "grid",headings = F, 
+  graph.magnif = 0.75, 
+  valid.col = FALSE, 
+  tmp.img.dir = "/tmp"
+),
+method = 'render')
+```
+
+
+<br><br>
+
+# FIGURE 1: mean EQ-5D-3L scores males by age and IMD quintile (unajusted)
+![](./outputs_3l/figure1.jpg)
+
+# TABLE 1: mean EQ-5D-3L scores males by age and IMD quintile (unajusted)
+```{r}
+kable(read.csv("./outputs_3l/table1.csv"), row.names = T)
+```
+
+
+# FIGURE 2: mean EQ-5D-3L scores females by age and IMD quintile (unajusted)
+![](./outputs_3l/figure2.jpg)
+
+
+# TABLE 2: mean EQ-5D-3L scores males by age and IMD quintile (unajusted)
+```{r}
+kable(read.csv("./outputs_3l/table2.csv"), row.names = T)
+```
+
+
+*****
+
+# FIGURES 1+2 and TABLES 1+2 adjusted using diease dummies
+
+## FIGURE 1 males adjusted using diease dummies
+![](./outputs_3l/figure1_adj_A.jpg)
+
+# TABLE 1 males adjusted using diease dummies
+```{r}
+kable(read.csv("./outputs_3l/table1_adj_A.csv"), row.names = T)
+```
+
+## FIGURE 2: females adjusted using diease dummies
+![](./outputs_3l/figure2_adj_A.jpg)
+
+## TABLE 2 females adjusted using diease dummies
+```{r}
+kable(read.csv("./outputs_3l/table2_adj_A.csv"), row.names = T)
+```
+
+
+
+*****
+
+# FIGURES 1+2 and TABLES 1+2 adjusted using diease sum score (range: 0-6)
+
+## FIGURE 1 males adjusted using sum score
+![](./outputs_3l/figure1_adj_B.jpg)
+
+# TABLE 1 males adjusted using sum score
+```{r}
+kable(read.csv("./outputs_3l/table1_adj_B.csv"), row.names = T)
+```
+
+## FIGURE 2: females adjusted using sum score
+![](./outputs_3l/figure2_adj_B.jpg)
+
+## TABLE 2 females adjusted using sum score
+```{r}
+kable(read.csv("./outputs_3l/table2_adj_B.csv"), row.names = T)
+```
+
+****
+
+# FIGURE 3 + 4: Ratio of IMD1/5 mean EQ-5D scores by age - MALE + FEMALE (unadjusted)
+
+![](./outputs_3l/figure3c.jpg)
+****
+
+# FIGURE 3 + 4: Ratio of IMD1/5 mean EQ-5D scores by age - MALE + FEMALE adjusted using disease dummies
+
+![](./outputs_3l/figure3c_adj_A.jpg)
+
+****
+
+# FIGURE 3 + 4: Ratio of IMD1/5 mean EQ-5D scores by age - MALE + FEMALE adjusted using sum score
+
+![](./outputs_3l/figure3c_adj_B.jpg)
+
+****
+
+# FIGURES 5: Absolute difference in IMD1/5  mean EQ-5D score MALES (unadjusted)
+
+![](./outputs_3l/figure5.jpg)
+
+# FIGURES 6: Absolute difference in IMD1/5  mean EQ-5D score FEMALES (unadjusted)
+
+![](./outputs_3l/figure6.jpg)
+
+*****
+
+# FIGURES 5+6: Absolute difference (adjusted using disease dummies)
+
+## FIGURES 5: Absolute difference adjusted using disease dummies
+
+![](./outputs_3l/figure5_adj_A.jpg)
+
+## FIGURES 6: Absolute difference adjusted using disease dummies
+
+![](./outputs_3l/figure6_adj_A.jpg)
+
+*****
+
+# FIGURES 5+6: Absolute difference (adjusted using sum score)
+
+
+
+## FIGURES 5: Absolute difference adjusted using sum score
+
+![](./outputs_3l/figure5_adj_B.jpg)
+
+## FIGURES 6: Absolute difference adjusted using sum score
+
+![](./outputs_3l/figure6_adj_B.jpg)
+
+
+
+# FIGURE 7: Concentration index value by age - PRE / POST 2017 bc 5L
+
+![](./outputs_3l/figure7.jpg)
+
+*****
+
+# FIGURES 9: Proportion reporting each level of response for each EQ-5D dimension - MALE
+
+![](./outputs_3l/figure9.jpg)
+
+# FIGURES 10: Proportion reporting each level of response for each EQ-5D dimension - FEMALE
+
+![](./outputs_3l/figure10.jpg)
+
+*****
+
+# FIGURES 11: IMD1/IMD5 ratio of % reporting problems for each EQ-5D dimension - MALE
+
+![](./outputs_3l/figure11.jpg)
+
+# FIGURES 12: IMD1/IMD5 ratio of % reporting problems for each EQ-5D dimension - FEMALE
+
+![](./outputs_3l/figure12.jpg)
+
+# TABLES 3-12: 
+
+
+```{r}
+for(i in 3:12){
+  print(paste0(" ****** TABLE ",i," *********"))
+  tbl <- read.csv(paste0("./outputs_3l/table",i,".csv"))
+  print(tbl)
+}
+```
+
+
+
+
